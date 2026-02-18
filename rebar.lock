@@ -1,0 +1,11 @@
+{"1.2.0",
+[{<<"logger_formatter_json">>,{pkg,<<"logger_formatter_json">>,<<"0.8.4">>},0},
+ {<<"thoas">>,{pkg,<<"thoas">>,<<"1.2.1">>},1}]}.
+[
+{pkg_hash,[
+ {<<"logger_formatter_json">>, <<"659EF67E1A51863A15FFB9A2B4E59F54BA69705932185CE8079D892C30AE0E94">>},
+ {<<"thoas">>, <<"19A25F31177A17E74004D4840F66D791D4298C5738790FA2CC73731EB911F195">>}]},
+{pkg_hash_ext,[
+ {<<"logger_formatter_json">>, <<"0376034D216E94AFF714E443E86951AC7AE83624F680A3F4F49BFFCC62054193">>},
+ {<<"thoas">>, <<"E38697EDFFD6E91BD12CEA41B155115282630075C2A727E7A6B2947F5408B86A">>}]}
+].
