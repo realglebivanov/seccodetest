@@ -56,9 +56,9 @@ handle_call(Req, From, State) ->
             {stop, Reason, State}
     end.
 
-handle_cast(Request, Sock) ->
+handle_cast(Request, State) ->
     logger:warning("Unexpected cast ~p received", [Request]),
-    {noreply, Sock}.
+    {noreply, State}.
 
 handle_info(recv, State) ->
     case client_conn_state:recv_update(State) of
@@ -84,7 +84,7 @@ handle_info(Info, State) ->
     logger:warning("Unexpected message received ~p", [Info]),
     {noreply, State}.
 
-terminate(Reason, Sock) ->
+terminate(Reason, State) ->
     logger:info("Closing socket because of ~p", [Reason]),
-    ok = client_tcp_sock:close(Sock),
+    ok = client_conn_state:terminate(State),
     ok.

@@ -1,13 +1,13 @@
 -module(client_tcp_sock).
 
 -export([send/2, close/1]).
--export_type([send_ret/0, error/0, reason/0]).
+-export_type([socket_ret/0, error/0, reason/0]).
 
--type send_ret() :: ok | error().
--type reason() :: closed | timeout | inet:posix().
+-type socket_ret() :: ok | error().
 -type error() :: {error, reason()}.
+-type reason() :: closed | timeout | inet:posix().
 
--spec send(gen_tcp:socket(), binary()) -> send_ret().
+-spec send(gen_tcp:socket(), binary()) -> socket_ret().
 send(Sock, Bin) ->
     case gen_tcp:send(Sock, Bin) of
         ok -> ok;
@@ -15,7 +15,7 @@ send(Sock, Bin) ->
         {error, _Reason} = Err -> Err
     end.
 
--spec try_to_resend(gen_tcp:socket(), binary()) -> send_ret().
+-spec try_to_resend(gen_tcp:socket(), binary()) -> socket_ret().
 try_to_resend(Sock, Data) ->
     case inet:setopts(Sock, [{packet, raw}]) of
         ok ->
@@ -29,7 +29,7 @@ try_to_resend(Sock, Data) ->
             Err
     end.
 
--spec try_to_resend(gen_tcp:socket(), binary(), non_neg_integer()) -> send_ret().
+-spec try_to_resend(gen_tcp:socket(), binary(), non_neg_integer()) -> socket_ret().
 try_to_resend(Sock, Data, Retries) ->
     case gen_tcp:send(Sock, Data) of
         ok -> ok;
@@ -50,7 +50,7 @@ close(Sock) ->
             logger:warning("Error encoutered while closing: ~p", [Reason])
     end.
 
--spec drain(gen_tcp:socket()) -> send_ret().
+-spec drain(gen_tcp:socket()) -> socket_ret().
 drain(Sock) ->
     case gen_tcp:recv(Sock, 0, 1) of
         {ok, _Packet} -> drain(Sock);

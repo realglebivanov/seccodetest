@@ -11,7 +11,7 @@ start_link() ->
 init([]) ->
     ok = server_auth:init(),
     SupFlags = #{
-        strategy => one_for_one,
+        strategy => rest_for_one,
         intensity => 100,
         period => 1
     },

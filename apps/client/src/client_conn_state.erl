@@ -1,6 +1,6 @@
 -module(client_conn_state).
 
--export([new/1, recv_update/1, send/3]).
+-export([new/1, recv_update/1, send/3, terminate/1]).
 
 -record(state, {sock, reqs}).
 
@@ -56,3 +56,7 @@ send(State, From, Req) ->
         {error, _Reason} = Err ->
             Err
     end.
+
+-spec terminate(#state{}) -> ok.
+terminate(State) ->
+    ok = client_tcp_sock:close(State#state.sock).
