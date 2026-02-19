@@ -18,7 +18,8 @@
     binary,
     {packet, 2},
     {keepalive, true},
-    {linger, {true, 5000}}
+    {linger, {true, 5000}},
+    {send_timeout, 5000}
 ]).
 
 -spec child_spec() -> supervisor:child_spec().

@@ -1,25 +1,31 @@
 -module(server_tcp_sock).
 
--export([maybe_send/2, close/1]).
+-export([send/2, close/1]).
 -export_type([send_ret/0, error/0]).
 
 -type send_ret() :: ok | error().
 -type error() :: {error, closed | timeout | inet:posix()}.
 
--spec maybe_send(gen_tcp:socket(), binary()) -> send_ret().
-maybe_send(Sock, Bin) ->
+-spec send(gen_tcp:socket(), binary()) -> send_ret().
+send(Sock, Bin) ->
     case gen_tcp:send(Sock, Bin) of
         ok -> ok;
         {error, {timeout, Rest}} -> try_to_resend(Sock, Rest);
-        {error, closed} -> {error, closed}
+        {error, _Reason} = Err -> Err
     end.
 
 -spec try_to_resend(gen_tcp:socket(), binary()) -> send_ret().
 try_to_resend(Sock, Data) ->
-    maybe
-        ok ?= inet:setopts(Sock, [{packet, raw}]),
-        ok ?= try_to_resend(Sock, Data, 5),
-        ok ?= inet:setopts(Sock, [{packet, 2}])
+    case inet:setopts(Sock, [{packet, raw}]) of
+        ok ->
+            Res = try_to_resend(Sock, Data, _Retries = 5),
+            Restore = inet:setopts(Sock, [{packet, 2}]),
+            case Res of
+                ok -> Restore;
+                {error, _Reason} = Err -> Err
+            end;
+        {error, _Reason} = Err ->
+            Err
     end.
 
 -spec try_to_resend(gen_tcp:socket(), binary(), non_neg_integer()) -> send_ret().
@@ -33,16 +39,21 @@ try_to_resend(Sock, Data, Retries) ->
 
 -spec close(gen_tcp:socket()) -> ok.
 close(Sock) ->
-    ok = gen_tcp:shutdown(Sock, write),
-    ok = drain(Sock),
-    ok = gen_tcp:close(Sock),
-    ok.
+    maybe
+        ok ?= gen_tcp:shutdown(Sock, write),
+        ok ?= drain(Sock),
+        ok ?= gen_tcp:close(Sock),
+        ok
+    else
+        {error, Reason} ->
+            logger:warning("Error encoutered while closing: ~p", [Reason])
+    end.
 
--spec drain(gen_tcp:socket()) -> ok.
+-spec drain(gen_tcp:socket()) -> send_ret().
 drain(Sock) ->
-    case gen_tcp:recv(Sock, 0, 0) of
+    case gen_tcp:recv(Sock, 0, 1) of
         {ok, _Packet} -> drain(Sock);
         {error, timeout} -> ok;
         {error, closed} -> ok;
-        {error, Reason} -> logger:warning("Error encoutered while draining ~p", [Reason])
+        {error, _Reason} = Err -> Err
     end.

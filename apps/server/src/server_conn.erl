@@ -17,7 +17,11 @@
 
 -spec child_spec() -> supervisor:child_spec().
 child_spec() ->
-    #{id => ?MODULE, start => {server_conn, start_link, []}}.
+    #{
+        id => ?MODULE,
+        start => {server_conn, start_link, []},
+        restart => temporary
+    }.
 
 -spec start_link(gen_tcp:socket()) -> gen_server:start_ret().
 start_link(Sock) ->

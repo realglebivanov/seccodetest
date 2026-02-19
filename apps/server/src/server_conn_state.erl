@@ -30,12 +30,22 @@ decode_handle(State, Bin) ->
             {ok, State}
     end.
 
--spec handle(#state{}, event()) -> {ok, #state{}} | server_tcp_sock:error().
+-spec handle(#state{}, proto_entity()) -> {ok, #state{}} | server_tcp_sock:error().
+handle(State = #state{status = #authed{login = Login}}, Msg = #auth{}) ->
+    ok = server_auth:logout(Login),
+    handle(State#state{status = #connected{}}, Msg);
 handle(State = #state{status = #connected{}}, Msg = #auth{}) ->
     case server_auth:login(Msg#auth.login, Msg#auth.password) of
-        ok -> {ok, #state{sock = State#state.sock, status = #authed{login = Msg#auth.login}}};
-        {error, invalid_credentials} -> maybe_send(State, #auth_error{});
-        {error, already_connected} -> maybe_send(State, #already_connected{})
+        ok ->
+            NewState = #state{
+                sock = State#state.sock,
+                status = #authed{login = Msg#auth.login}
+            },
+            send(NewState, #auth_ok{seq_id = Msg#auth.seq_id});
+        {error, invalid_credentials} ->
+            send(State, #auth_error{seq_id = Msg#auth.seq_id});
+        {error, already_connected} ->
+            send(State, #already_connected{seq_id = Msg#auth.seq_id})
     end;
 handle(State = #state{status = Status = #authed{}}, Msg = #send_message{}) ->
     Message = #message{
@@ -43,9 +53,11 @@ handle(State = #state{status = Status = #authed{}}, Msg = #send_message{}) ->
         text = Msg#send_message.text
     },
     server_conn_sup:broadcast(Message),
-    {ok, State};
+    send(State, #message_sent{seq_id = Msg#send_message.seq_id});
+handle(State = #state{status = #connected{}}, Msg = #send_message{}) ->
+    send(State, #auth_error{seq_id = Msg#send_message.seq_id});
 handle(State = #state{status = #authed{}}, Msg = #message{}) ->
-    maybe_send(State, Msg);
+    send(State, Msg);
 handle(State, Msg) ->
     logger:warning("Received invalid msg ~p in state ~p", [Msg, State]),
     {ok, State}.
@@ -57,9 +69,10 @@ terminate(State = #state{status = Status = #authed{}}) ->
     ok = server_tcp_sock:close(State#state.sock),
     ok = server_auth:logout(Status#authed.login).
 
--spec maybe_send(#state{}, event()) -> {ok, #state{}} | server_tcp_sock:error().
-maybe_send(State, Message) ->
-    case server_tcp_sock:maybe_send(State#state.sock, proto:encode(Message)) of
+-spec send(#state{}, resp() | event()) -> {ok, #state{}} | server_tcp_sock:error().
+send(State, Message) ->
+    logger:debug("Sending message to a client ~p", [Message]),
+    case server_tcp_sock:send(State#state.sock, proto:encode(Message)) of
         ok -> {ok, State};
         {error, _Reason} = Err -> Err
     end.

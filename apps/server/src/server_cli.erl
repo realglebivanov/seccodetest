@@ -63,22 +63,20 @@ terminate(_Reason, Port) ->
     {ok, command()} | {error, invalid_args | invalid_command | no_input}.
 parse(Data) ->
     case binary:split(Data, <<" ">>, [global, trim_all]) of
-        [<<"useradd">>, Login, Password] -> {ok, {useradd, Login, Password}};
-        [<<"useradd">> | _] -> {error, invalid_args};
-        [<<"userdel">>, Login] -> {ok, {userdel, Login}};
-        [<<"userdel">> | _] -> {error, invalid_args};
+        [<<"/useradd">>, Login, Password] -> {ok, {useradd, Login, Password}};
+        [<<"/useradd">> | _] -> {error, invalid_args};
+        [<<"/userdel">>, Login] -> {ok, {userdel, Login}};
+        [<<"/userdel">> | _] -> {error, invalid_args};
         [] -> {error, no_input};
         _ -> {error, invalid_command}
     end.
 
--spec run(port(), command()) -> ok.
+-spec run(port(), command()) -> true.
 run(Port, {useradd, Login, Password}) ->
     case server_auth:add(Login, Password) of
         ok -> port_command(Port, <<"User added\n">>);
         error -> port_command(Port, <<"Failed to add a user\n">>)
     end;
 run(Port, {userdel, Login}) ->
-    case server_auth:del(Login) of
-        ok -> port_command(Port, <<"User deleted\n">>);
-        error -> port_command(Port, <<"Failed to delete a user\n">>)
-    end.
+    server_auth:del(Login),
+    port_command(Port, <<"Failed to delete a user\n">>).
