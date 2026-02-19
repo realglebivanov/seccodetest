@@ -78,5 +78,7 @@ run(Port, {useradd, Login, Password}) ->
         error -> port_command(Port, <<"Failed to add a user\n">>)
     end;
 run(Port, {userdel, Login}) ->
-    server_auth:del(Login),
-    port_command(Port, <<"Failed to delete a user\n">>).
+    case server_auth:del(Login) of
+        ok -> port_command(Port, <<"User deleted\n">>);
+        error -> port_command(Port, <<"Failed to delete a user\n">>)
+    end.

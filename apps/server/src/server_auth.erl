@@ -45,12 +45,17 @@ add(Login, Password) ->
             error
     end.
 
--spec del(login()) -> ok.
+-spec del(login()) -> ok | error.
 del(Login) ->
-    ets:delete(?USERS, Login),
-    case ets:lookup(?SESSIONS, Login) of
-        [{Login, Pid}] -> server_conn:stop(Pid);
-        [] -> ok
+    case ets:lookup(?USERS, Login) of
+        [] ->
+            error;
+        [_Obj] ->
+            ets:delete(?USERS, Login),
+            case ets:lookup(?SESSIONS, Login) of
+                [{Login, Pid}] -> server_conn:stop(Pid);
+                [] -> ok
+            end
     end.
 
 -spec get_active_pids() -> [pid()].
