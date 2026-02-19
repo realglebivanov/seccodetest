@@ -1,5 +1,4 @@
 PROFILE=default
-EBIN_PATH=_build/$(PROFILE)/lib/*/ebin
 
 check:
 	rebar3 as $(PROFILE) check
