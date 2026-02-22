@@ -2,9 +2,10 @@
 
 -export([new/1, recv_handle/1, handle/2, terminate/1]).
 
--record(state, {sock, status}).
 -record(connected, {}).
--record(authed, {login}).
+-record(authed, {login :: binary()}).
+
+-record(state, {sock :: gen_tcp:socket(), status :: #connected{} | #authed{}}).
 
 -include_lib("proto/include/proto.hrl").
 

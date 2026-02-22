@@ -2,7 +2,10 @@
 
 -export([new/1, recv_update/1, send/3, terminate/1]).
 
--record(state, {sock, reqs}).
+-record(state, {
+    sock :: gen_tcp:socket(),
+    reqs :: #{pos_integer() => gen_server:from()}
+}).
 
 -include_lib("proto/include/proto.hrl").
 
